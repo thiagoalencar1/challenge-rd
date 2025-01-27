@@ -1,33 +1,66 @@
-version: '3'
-
 services:
     db:
         image: postgres:16-alpine
+        container_name: db
         environment:
           - POSTGRES_USER=postgres
           - POSTGRES_PASSWORD=password
-        ports:
-            - '5432:5432'
+        ports: [5432:5432]
         volumes:
-            - postgres13:/var/lib/postgresql/data
+            - postgres:/var/lib/postgresql/data
+        networks:
+            - store
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 3s
+            timeout: 3s
+            retries: 5
     redis:
         image: redis:7.0.15-alpine
+        container_name: redis
         ports:
         - '6379:6379'
         volumes:
-        - redis_data:/data  
+        - redis_data:/data
+        networks:
+            - store
     web:
-        ## TODO
-    test:
         build: .
-        command: bundle exec rspec
+        container_name: web
+        working_dir: /app
+        ports: [3000:3000]
         volumes:
-            - .:/rails
+            - .:/app
+            - rubygems_store:/usr/local/bundle
+        env_file:
+            - .env
+        tty: true
+        stdin_open: true
+        command: bash
+        networks:
+            - store
         depends_on:
             - db
-            - redis 
-        environment:
-            - DATABASE_URL: postgresql://postgres:password@db:5432/myapp_test
-            - REDIS_URL: redis://redis:6379/0
+            - redis
+        
+    # test:
+    #     build: .
+    #     command: bundle exec rspec
+    #     volumes:
+    #         - .:/rails
+    #     depends_on:
+    #         - db
+    #         - redis 
+    #     environment:
+    #         - DATABASE_URL: postgresql://postgres:password@db:5432/myapp_test
+    #         - REDIS_URL: redis://redis:6379/0
+    #     network:
+    #         - store
 volumes:
-    postgres13:
+    postgres:
+    redis_data:
+    rubygems_store:
+
+networks:
+    store:
+        name: store
