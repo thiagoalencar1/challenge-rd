@@ -20,4 +20,22 @@ RSpec.describe Product, type: :model do
       expect(product.errors[:price]).to include("must be greater than or equal to 0")
     end
   end
+
+  context 'when handling associations' do
+    it 'has many cart items' do
+      product = create(:product)
+      cart = create(:cart)
+      cart_item = create(:cart_item, product: product, cart: cart)
+
+      expect(product.cart_items).to include(cart_item)
+    end
+
+    it 'destroys associated cart items when deleted' do
+      product = create(:product)
+      cart = create(:cart)
+      create(:cart_item, product: product, cart: cart)
+
+      expect { product.destroy }.to change(CartItem, :count).by(-1)
+    end
+  end
 end

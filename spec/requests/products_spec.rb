@@ -115,5 +115,23 @@ RSpec.describe "/products", type: :request do
         delete product_url(product), headers: valid_headers, as: :json
       }.to change(Product, :count).by(-1)
     end
+
+    it "returns not found for non-existent product" do
+      delete product_url(id: 999), headers: valid_headers, as: :json
+      json = JSON.parse(response.body)
+      
+      expect(response).to have_http_status(:not_found)
+      expect(json["error"]).to be_present
+    end
+
+    it "destroys associated cart items" do
+      product = Product.create! valid_attributes
+      cart = create(:cart)
+      create(:cart_item, product: product, cart: cart)
+
+      expect {
+        delete product_url(product), headers: valid_headers, as: :json
+      }.to change(CartItem, :count).by(-1)
+    end
   end
 end
