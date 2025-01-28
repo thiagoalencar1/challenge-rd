@@ -1,8 +1,8 @@
 class CartsController < ApplicationController
   # Define current_cart in begining of session
-  before_action :current_cart, only: [:create]
+  before_action :current_cart, only: [:create, :show, :update, :remove_product]
 
-  # POST /carts
+  # POST /cart
   def create
     find_or_validate_product
     validate_quantity
@@ -14,20 +14,30 @@ class CartsController < ApplicationController
     render_error(e.message, :unprocessable_entity)
   end
 
-  def destroy
-    @cart = Cart.find(params[:id])
-    @cart.destroy
-    head :no_content
-  rescue ActiveRecord::RecordNotFound
-    render_error('Carrinho não encontrado', :not_found)
+  # GET /cart
+  def show
+    render json: serialize_cart(@cart)
   end
 
-  # GET /carts
-  def show
-    @cart = Cart.find(params[:id])
+  # POST /cart/add_item
+  def update
+    find_or_validate_product
+    validate_quantity
+    add_product_to_cart
     render json: serialize_cart(@cart)
   rescue ActiveRecord::RecordNotFound
-    render_error('Carrinho não encontrado', :not_found)
+    render_error('Produto não encontrado', :not_found)
+  rescue ArgumentError => e
+    render_error(e.message, :unprocessable_entity)
+  end
+
+  # POST /cart/:product_id
+  def remove_product
+    product = Product.find(params[:product_id])
+    @cart.remove_product(product)
+    render json: serialize_cart(@cart)
+  rescue ActiveRecord::RecordNotFound
+    render_error('Produto não encontrado', :not_found)
   end
 
   private

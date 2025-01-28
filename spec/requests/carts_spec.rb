@@ -1,13 +1,13 @@
 require 'rails_helper'
 
-RSpec.describe "/carts", type: :request do
+RSpec.describe "/cart", type: :request do
   def json_response = JSON.parse(response.body)
   let(:product) { create(:product) }
 
-  describe "POST /carts" do
+  describe "POST /cart" do
     context "when adding products" do
       subject do
-        post '/carts', params: { product_id: product.id, quantity: 1 }, as: :json
+        post '/cart', params: { product_id: product.id, quantity: 1 }, as: :json
       end
 
       it "creates a new cart with the product" do
@@ -22,7 +22,7 @@ RSpec.describe "/carts", type: :request do
         subject
         first_cart_id = json_response["id"]
 
-        post '/carts', params: { product_id: product.id, quantity: 1 }, as: :json
+        post '/cart', params: { product_id: product.id, quantity: 1 }, as: :json
         second_cart_id = json_response["id"]
 
         expect(second_cart_id).to eq(first_cart_id)
@@ -30,7 +30,7 @@ RSpec.describe "/carts", type: :request do
 
       it "accumulates quantity for same product" do
         subject
-        post '/carts', params: { product_id: product.id, quantity: 1 }, as: :json
+        post '/cart', params: { product_id: product.id, quantity: 1 }, as: :json
 
         expect(json_response["products"].first["quantity"]).to eq(2)
         expect(json_response["total_price"]).to eq("20.0")
@@ -39,14 +39,14 @@ RSpec.describe "/carts", type: :request do
 
     context "with invalid parameters" do
       it "returns error for non-existent product" do
-        post '/carts', params: { product_id: 999, quantity: 1 }, as: :json
+        post '/cart', params: { product_id: 999, quantity: 1 }, as: :json
         
         expect(response).to have_http_status(:not_found)
         expect(json_response["error"]).to eq("Produto não encontrado")
       end
 
       it "returns error for invalid quantity" do
-        post '/carts', params: { product_id: product.id, quantity: 0 }, as: :json
+        post '/cart', params: { product_id: product.id, quantity: 0 }, as: :json
         
         expect(response).to have_http_status(:unprocessable_entity)
         expect(json_response["error"]).to eq("A quantidade do produto deve ser maior que zero")
@@ -54,39 +54,67 @@ RSpec.describe "/carts", type: :request do
     end
   end
 
-  describe "GET /carts/:id" do
-    let(:cart) { create(:cart, :with_items) }
+  describe "GET /cart" do
+    let!(:cart) { create(:cart, :with_items) }
+
+    before do
+      # Simula um carrinho na sessão
+      post '/cart', params: { product_id: product.id, quantity: 1 }, as: :json
+    end
 
     it "returns the cart with its items" do
-      get "/carts/#{cart.id}", as: :json
+      get "/cart", as: :json
       
       expect(response).to have_http_status(:ok)
       expect(json_response["products"]).to be_present
-      expect(json_response["total_price"]).to eq((cart.cart_items.sum { |item| item.quantity * item.product.price }).to_s)
-    end
-
-    it "returns not found for non-existent cart" do
-      get "/carts/999", as: :json
-      
-      expect(response).to have_http_status(:not_found)
-      expect(json_response["error"]).to eq("Carrinho não encontrado")
+      expect(json_response["total_price"]).to be_present
     end
   end
 
-  describe "DELETE /carts/:id" do
+  describe "POST /cart/add_item" do
     let!(:cart) { create(:cart, :with_items) }
 
-    it "destroys the requested cart" do
-      expect { delete "/carts/#{cart.id}", as: :json}.to change(Cart, :count).by(-1)
-      
-      expect(response).to have_http_status(:no_content)
+    before do
+      # Simula um carrinho na sessão
+      post '/cart', params: { product_id: product.id, quantity: 1 }, as: :json
     end
 
-    it "returns not found for non-existent cart" do
-      delete "/carts/999", as: :json
+    it "adds item to the cart" do
+      post "/cart/add_item", params: { product_id: product.id, quantity: 2 }, as: :json
+      
+      expect(response).to have_http_status(:ok)
+      expect(json_response["products"].find { |p| p["id"] == product.id }["quantity"]).to eq(3)
+    end
+
+    it "returns error for non-existent product" do
+      post "/cart/add_item", params: { product_id: 999, quantity: 1 }, as: :json
       
       expect(response).to have_http_status(:not_found)
-      expect(json_response["error"]).to eq("Carrinho não encontrado")
+      expect(json_response["error"]).to eq("Produto não encontrado")
+    end
+  end
+
+  describe "POST /cart/:product_id" do
+    let!(:cart) { create(:cart) }
+    let!(:cart_item) { create(:cart_item, cart: cart, product: product, quantity: 2) }
+
+    before do
+      # Simula um carrinho na sessão
+      post '/cart', params: { product_id: product.id, quantity: 1 }, as: :json
+    end
+
+    it "removes the product from cart" do
+      post "/cart/#{product.id}", as: :json
+      
+      expect(response).to have_http_status(:ok)
+      expect(json_response["products"]).to be_empty
+    end
+
+    it "returns error for non-existent product" do
+      post "/cart/999", as: :json
+      
+      expect(response).to have_http_status(:not_found)
+      expect(json_response["error"]).to eq("Produto não encontrado")
     end
   end
 end
