@@ -1,6 +1,6 @@
 class CartsController < ApplicationController
   # Define current_cart in begining of session
-  before_action :current_cart
+  before_action :current_cart, only: [:create]
 
   # POST /carts
   def create

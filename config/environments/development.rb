@@ -30,6 +30,9 @@ Rails.application.configure do
     config.cache_store = :null_store
   end
 
+  # Allow requests from any domain in development. Need to some tests.
+  config.hosts.clear
+
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
 

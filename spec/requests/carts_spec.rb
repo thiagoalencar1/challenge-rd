@@ -1,21 +1,92 @@
 require 'rails_helper'
 
 RSpec.describe "/carts", type: :request do
-  pending "TODO: Escreva os testes de comportamento do controller de carrinho necessários para cobrir a sua implmentação #{__FILE__}"
-  describe "POST /add_items" do
-    let(:cart) { Cart.create }
-    let(:product) { Product.create(name: "Test Product", price: 10.0) }
-    let!(:cart_item) { CartItem.create(cart: cart, product: product, quantity: 1) }
+  def json_response = JSON.parse(response.body)
+  let(:product) { create(:product) }
 
-    context 'when the product already is in the cart' do
+  describe "POST /carts" do
+    context "when adding products" do
       subject do
-        post '/cart/add_items', params: { product_id: product.id, quantity: 1 }, as: :json
-        post '/cart/add_items', params: { product_id: product.id, quantity: 1 }, as: :json
+        post '/carts', params: { product_id: product.id, quantity: 1 }, as: :json
       end
 
-      it 'updates the quantity of the existing item in the cart' do
-        expect { subject }.to change { cart_item.reload.quantity }.by(2)
+      it "creates a new cart with the product" do
+        expect { subject }.to change(Cart, :count).by(1)
+        expect(response).to have_http_status(:created)
+        
+        expect(json_response["products"].first["quantity"]).to eq(1)
+        expect(json_response["total_price"]).to eq("10.0")
       end
+
+      it "reuses the cart from session" do
+        subject
+        first_cart_id = json_response["id"]
+
+        post '/carts', params: { product_id: product.id, quantity: 1 }, as: :json
+        second_cart_id = json_response["id"]
+
+        expect(second_cart_id).to eq(first_cart_id)
+      end
+
+      it "accumulates quantity for same product" do
+        subject
+        post '/carts', params: { product_id: product.id, quantity: 1 }, as: :json
+
+        expect(json_response["products"].first["quantity"]).to eq(2)
+        expect(json_response["total_price"]).to eq("20.0")
+      end
+    end
+
+    context "with invalid parameters" do
+      it "returns error for non-existent product" do
+        post '/carts', params: { product_id: 999, quantity: 1 }, as: :json
+        
+        expect(response).to have_http_status(:not_found)
+        expect(json_response["error"]).to eq("Produto não encontrado")
+      end
+
+      it "returns error for invalid quantity" do
+        post '/carts', params: { product_id: product.id, quantity: 0 }, as: :json
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(json_response["error"]).to eq("A quantidade do produto deve ser maior que zero")
+      end
+    end
+  end
+
+  describe "GET /carts/:id" do
+    let(:cart) { create(:cart, :with_items) }
+
+    it "returns the cart with its items" do
+      get "/carts/#{cart.id}", as: :json
+      
+      expect(response).to have_http_status(:ok)
+      expect(json_response["products"]).to be_present
+      expect(json_response["total_price"]).to eq((cart.cart_items.sum { |item| item.quantity * item.product.price }).to_s)
+    end
+
+    it "returns not found for non-existent cart" do
+      get "/carts/999", as: :json
+      
+      expect(response).to have_http_status(:not_found)
+      expect(json_response["error"]).to eq("Carrinho não encontrado")
+    end
+  end
+
+  describe "DELETE /carts/:id" do
+    let!(:cart) { create(:cart, :with_items) }
+
+    it "destroys the requested cart" do
+      expect { delete "/carts/#{cart.id}", as: :json}.to change(Cart, :count).by(-1)
+      
+      expect(response).to have_http_status(:no_content)
+    end
+
+    it "returns not found for non-existent cart" do
+      delete "/carts/999", as: :json
+      
+      expect(response).to have_http_status(:not_found)
+      expect(json_response["error"]).to eq("Carrinho não encontrado")
     end
   end
 end
