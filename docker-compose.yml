@@ -2,9 +2,8 @@ services:
     db:
         image: postgres:16-alpine
         container_name: db
-        environment:
-          - POSTGRES_USER=postgres
-          - POSTGRES_PASSWORD=password
+        env_file:
+            - .env
         ports: [5432:5432]
         volumes:
             - postgres:/var/lib/postgresql/data
@@ -18,15 +17,34 @@ services:
     redis:
         image: redis:7.0.15-alpine
         container_name: redis
-        ports:
-        - '6379:6379'
+        ports: [6379:6379]
         volumes:
-        - redis_data:/data
+            - redis_data:/data
         networks:
             - store
+    sidekiq:
+        build: .
+        container_name: sidekiq
+        user: root
+        command: bash -c "bundle exec sidekiq"
+        working_dir: /app
+        env_file:
+            - .env
+        tty: true
+        stdin_open: true
+        networks:
+            - store
+        depends_on:
+            - db
+            - redis
+        volumes:
+            - .:/app
+            - rubygems_store:/usr/local/bundle
     web:
         build: .
         container_name: web
+        user: root
+        command: bash -c "rm -rf tmp/pids/server.pid && bin/setup && bundle exec rails s -b 0.0.0.0 -p 3000"
         working_dir: /app
         ports: [3000:3000]
         volumes:
@@ -36,7 +54,6 @@ services:
             - .env
         tty: true
         stdin_open: true
-        command: bash
         networks:
             - store
         depends_on:

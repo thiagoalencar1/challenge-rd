@@ -13,5 +13,10 @@ FactoryBot.define do
         create_list(:cart_item, 3, cart: cart)
       end
     end
+
+    trait :abandoned do
+      active { false }
+      abandoned_at { 8.days.ago }
+    end
   end
 end

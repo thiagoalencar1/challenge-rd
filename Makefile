@@ -1,5 +1,5 @@
 bash:
-	docker exec -it --user root web bash
+	docker compose exec -it --user root web bash
 
 down:
 	docker compose down

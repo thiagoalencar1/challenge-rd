@@ -29,7 +29,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_01_28_144838) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "last_interaction_at"
-    t.boolean "abandoned?", default: false
+    t.datetime "abandoned_at"
   end
 
   create_table "products", force: :cascade do |t|
