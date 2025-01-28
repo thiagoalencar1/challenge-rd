@@ -42,19 +42,6 @@ services:
         depends_on:
             - db
             - redis
-    test:
-        build: .
-        command: bundle exec rspec
-        volumes:
-            - .:/rails
-        depends_on:
-            - db
-            - redis 
-        environment:
-            - DATABASE_URL: postgresql://postgres:password@db:5432/myapp_test
-            - REDIS_URL: redis://redis:6379/0
-        network:
-            - store
 volumes:
     postgres:
     redis_data:
