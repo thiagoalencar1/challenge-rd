@@ -23,19 +23,21 @@ This application provides the following shopping cart features:
 ```bash
 docker compose build
 ```
-### 2. Run the project:
+### 2. Rename .env.example to .env
+
+### 3. Run the project:
 ```bash
 make up
 ```
-### 3. Run the tests:
+### 4. Run the tests:
 ```bash
 make test
 ```
-### 4. Bash
+### 5. Bash
 ```bash
 make bash
 ```
-### 5. Interact with the endpoints
+### 6. Endpoints
 The API has the following endpoints:
 
 #### Create a new cart with item
@@ -63,10 +65,10 @@ post http://localhost:3000/cart/add_item
 
 #### Remove an item from the cart
 ```bash
-post http://localhost:3000/cart/1
+post http://localhost:3000/cart/1 # where 1 is the product_id
 ```
 
-#### Show the cart
+#### Show the cart contents
 
 ```bash
 get http://localhost:3000/cart
