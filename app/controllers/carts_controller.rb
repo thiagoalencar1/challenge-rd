@@ -65,10 +65,11 @@ class CartsController < ApplicationController
   end
 
   def current_cart
-    @cart ||= Cart.find_or_create_by(id: session[:cart_id]) do |cart|
-      cart.total_price = 0
+    @cart ||= begin
+      Cart.find_by(id: session[:cart_id]) || Cart.create!(total_price: 0)
     end
     session[:cart_id] = @cart.id
+    @cart
   end
 
   def find_or_validate_product

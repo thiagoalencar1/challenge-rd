@@ -58,7 +58,6 @@ RSpec.describe "/cart", type: :request do
     let!(:cart) { create(:cart, :with_items) }
 
     before do
-      # Simula um carrinho na sessão
       post '/cart', params: { product_id: product.id, quantity: 1 }, as: :json
     end
 
@@ -75,7 +74,6 @@ RSpec.describe "/cart", type: :request do
     let!(:cart) { create(:cart, :with_items) }
 
     before do
-      # Simula um carrinho na sessão
       post '/cart', params: { product_id: product.id, quantity: 1 }, as: :json
     end
 
@@ -99,7 +97,6 @@ RSpec.describe "/cart", type: :request do
     let!(:cart_item) { create(:cart_item, cart: cart, product: product, quantity: 2) }
 
     before do
-      # Simula um carrinho na sessão
       post '/cart', params: { product_id: product.id, quantity: 1 }, as: :json
     end
 
