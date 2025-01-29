@@ -11,4 +11,4 @@ up:
 	docker compose up
 
 test:
-	docker compose run test
+	docker compose run web bundle exec rspec
