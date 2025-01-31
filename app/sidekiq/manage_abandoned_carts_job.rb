@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-require 'sidekiq-scheduler'
-
 class ManageAbandonedCartsJob
-  include Sidekiq::Worker
   MARK_AS_ABANDONED_TIMEOUT = 3.hours.ago
   DELETE_OLD_ABANDONED_CARTS_TIMEOUT = 7.days.ago
 
-  def perform
+  include Sidekiq::Job
+
+  def perform(*args)
     mark_abandoned_carts
     delete_old_abandoned_carts
   end
