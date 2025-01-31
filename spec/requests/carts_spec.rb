@@ -13,8 +13,8 @@ RSpec.describe "/cart", type: :request do
       it "creates a new cart with the product" do
         expect { subject }.to change(Cart, :count).by(1)
         expect(response).to have_http_status(:created)
-        
-        expect(json_response["products"].first["quantity"]).to eq(1)
+
+        expect(json_response["cart_items"].first["quantity"]).to eq(1)
         expect(json_response["total_price"]).to eq("10.0")
       end
 
@@ -32,7 +32,7 @@ RSpec.describe "/cart", type: :request do
         subject
         post '/cart', params: { product_id: product.id, quantity: 1 }, as: :json
 
-        expect(json_response["products"].first["quantity"]).to eq(2)
+        expect(json_response["cart_items"].first["quantity"]).to eq(2)
         expect(json_response["total_price"]).to eq("20.0")
       end
     end
@@ -65,7 +65,8 @@ RSpec.describe "/cart", type: :request do
       get "/cart", as: :json
       
       expect(response).to have_http_status(:ok)
-      expect(json_response["products"]).to be_present
+
+      expect(json_response["cart_items"]).to be_present
       expect(json_response["total_price"]).to be_present
     end
   end
@@ -81,7 +82,7 @@ RSpec.describe "/cart", type: :request do
       post "/cart/add_item", params: { product_id: product.id, quantity: 2 }, as: :json
       
       expect(response).to have_http_status(:ok)
-      expect(json_response["products"].find { |p| p["id"] == product.id }["quantity"]).to eq(3)
+      expect(json_response["cart_items"].find { |p| p["id"] == product.id }["quantity"]).to eq(3)
     end
 
     it "returns error for non-existent product" do
@@ -104,7 +105,7 @@ RSpec.describe "/cart", type: :request do
       post "/cart/#{product.id}", as: :json
       
       expect(response).to have_http_status(:ok)
-      expect(json_response["products"]).to be_empty
+      expect(json_response["cart_items"]).to be_empty
     end
 
     it "returns error for non-existent product" do
