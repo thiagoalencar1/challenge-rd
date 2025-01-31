@@ -1,28 +1,25 @@
 # frozen_string_literal: true
 
 class ManageAbandonedCartsJob
-  MARK_AS_ABANDONED_TIMEOUT = 3.hours.ago
-  DELETE_OLD_ABANDONED_CARTS_TIMEOUT = 7.days.ago
+ include Sidekiq::Job
 
-  include Sidekiq::Job
-
-  def perform(*args)
-    mark_abandoned_carts
+  def perform
     delete_old_abandoned_carts
+    mark_abandoned_carts
   end
-
+  
   private
 
   def mark_abandoned_carts
-    Cart.where('last_interaction_at > ?', MARK_AS_ABANDONED_TIMEOUT).find_each do |cart|
-      cart.mark_as_abandoned
+    Cart.where('updated_at < ?', 3.hours.ago).where(abandoned_at: nil).each do |cart|
+      cart.update!(abandoned_at: Time.current)
       Rails.logger.info "Cart ##{cart.id} marked as abandoned"
     end
   end
 
   def delete_old_abandoned_carts
-    Cart.where('abandoned_at > ?', DELETE_OLD_ABANDONED_CARTS_TIMEOUT).find_each do |cart|
-      cart.remove_if_abandoned
+    Cart.where('abandoned_at < ?', 7.days.ago).each do |cart|
+      cart.destroy!
       Rails.logger.info "Cart ##{cart.id} deleted (abandoned for more than 7 days)"
     end
   end

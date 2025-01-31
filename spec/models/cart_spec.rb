@@ -9,22 +9,19 @@ RSpec.describe Cart, type: :model do
     end
   end
 
-  describe '#mark_as_abandoned' do
-    let(:cart) { create(:cart) }
+  context 'when handling associations' do
+    it 'has many cart items' do
+      cart = create(:cart)
+      cart_item = create(:cart_item, cart: cart)
 
-    it 'marks the cart as abandoned by setting abandoned_at' do
-      expect { cart.mark_as_abandoned }
-        .to change { cart.abandoned_at }
-        .from(nil)
+      expect(cart.cart_items).to include(cart_item)
     end
-  end
 
-  describe 'remove_if_abandoned' do
-    let(:cart) { create(:cart, last_interaction_at: 7.days.ago) }
+    it 'destroys associated cart items when deleted' do
+      cart = create(:cart)
+      cart_item = create(:cart_item, cart: cart)
 
-    it 'removes the shopping cart if abandoned for a certain time' do
-      cart.mark_as_abandoned
-      expect { cart.remove_if_abandoned }.to change { Cart.count }.by(-1)
+      expect { cart.destroy }.to change(CartItem, :count).by(-1)
     end
   end
 end
