@@ -7,7 +7,7 @@ class CartsController < ApplicationController
     find_or_validate_product
     validate_quantity
     add_product_to_cart
-    render json: serialize_cart(@cart), status: :created
+    render json: @cart, serializer: CartSerializer, status: :created
   rescue ActiveRecord::RecordNotFound
     render_error('Produto não encontrado', :not_found)
   rescue ArgumentError => e
@@ -16,7 +16,7 @@ class CartsController < ApplicationController
 
   # GET /cart
   def show
-    render json: serialize_cart(@cart)
+    render json: @cart, serializer: CartSerializer
   end
 
   # POST /cart/add_item
@@ -24,7 +24,7 @@ class CartsController < ApplicationController
     find_or_validate_product
     validate_quantity
     add_product_to_cart
-    render json: serialize_cart(@cart)
+    render json: @cart, serializer: CartSerializer
   rescue ActiveRecord::RecordNotFound
     render_error('Produto não encontrado', :not_found)
   rescue ArgumentError => e
@@ -35,30 +35,12 @@ class CartsController < ApplicationController
   def remove_product
     product = Product.find(params[:product_id])
     @cart.remove_product(product)
-    render json: serialize_cart(@cart)
+    render json: @cart, serializer: CartSerializer
   rescue ActiveRecord::RecordNotFound
     render_error('Produto não encontrado', :not_found)
   end
 
   private
-
-  def serialize_cart(cart)
-    {
-      id: cart.id,
-      products: cart.cart_items.map { |item| serialize_cart_item(item) },
-      total_price: calculate_total_price(cart)
-    }
-  end
-
-  def serialize_cart_item(item)
-    {
-      id: item.product.id,
-      name: item.product.name,
-      quantity: item.quantity,
-      unit_price: item.product.price,
-      total_price: item.quantity * item.product.price
-    }
-  end
 
   def calculate_total_price(cart)
     cart.cart_items.sum { |item| item.quantity * item.product.price }
